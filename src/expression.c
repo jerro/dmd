@@ -1161,11 +1161,15 @@ Type *functionParameters(Loc loc, Scope *sc, TypeFunction *tf,
 
                     vd->semantic(sc);
                     sc->insert(vd);
-                    
+
                     VarExp* ve = new VarExp(loc, vd);
                     ve->semantic(sc);
+
                     AssignExp* ae = new AssignExp(loc, ve, arg);
+                    // set op to TOKconstruct so that we can initialize const variables
+                    ae->op = TOKconstruct;
                     ae->semantic(sc);
+                    
                     arg = new CommaExp(loc, ae, ve);
                     arg->semantic(sc);
                 }
