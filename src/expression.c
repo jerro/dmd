@@ -1157,20 +1157,18 @@ Type *functionParameters(Loc loc, Scope *sc, TypeFunction *tf,
                 if(p->storageClass & STCauto && !arg->isLvalue())
                 {
                     VarDeclaration* vd = new VarDeclaration(
-                        loc, p->type, Identifier::generateId("rvalueRefParam"), NULL);
-
+                        loc, p->type, Identifier::generateId("rvalueRefParam"), 
+                        new ExpInitializer(loc, arg));
+   
                     vd->semantic(sc);
-                    sc->insert(vd);
+
+                    DeclarationExp* de = new DeclarationExp(loc, vd);
+                    de->semantic(sc);
 
                     VarExp* ve = new VarExp(loc, vd);
                     ve->semantic(sc);
 
-                    AssignExp* ae = new AssignExp(loc, ve, arg);
-                    // set op to TOKconstruct so that we can initialize const variables
-                    ae->op = TOKconstruct;
-                    ae->semantic(sc);
-                    
-                    arg = new CommaExp(loc, ae, ve);
+                    arg = new CommaExp(loc, de, ve);
                     arg->semantic(sc);
                 }
 
