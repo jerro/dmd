@@ -185,7 +185,7 @@ extern  targ_size_t localsize,
 extern  segidx_t cseg;
 extern  int STACKALIGN;
 extern  LocalSection Para;
-extern  LocalSection Fast;
+extern  LocalSection This;
 extern  LocalSection Auto;
 extern  LocalSection EEStack;
 #if TARGET_OSX

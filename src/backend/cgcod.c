@@ -51,8 +51,13 @@ int EBPtoESP;                   // add to EBP offset to get ESP offset
 int AllocaOff;                  // offset of alloca temporary
 LocalSection Para;              // section of function parameters
 LocalSection Auto;              // section of automatics and registers
-LocalSection Fast;              // section of fastpar
+LocalSection This;              // section for 'this' parameter
 LocalSection EEStack;           // offset of SCstack variables from ESP
+
+LocalSection* fastpar_section(Symbol* s)
+{
+    return strcmp(s->Sident, "this") == 0 ? &This : &Auto;
+}
 
 REGSAVE regsave;
 
@@ -645,7 +650,7 @@ Lagain:
      *  BP->    caller's BP
      *          DS                      (if Windows prolog/epilog)
      *          exception handling context symbol
-     *  Fast.size fastpar
+     *  This.size 'this' parameter
      *  Auto.size    autos and regs
      *  regsave.off  any saved registers
      *  Foff    floating register
@@ -671,20 +676,20 @@ Lagain:
      * But more work needs to be done, see Bugzilla 9200. Really, each section should be aligned
      * individually rather than as a group.
      */
-    Fast.size = 0;
+    This.size = 0;
 #if NTEXCEPTIONS == 2
-    Fast.size -= nteh_contextsym_size();
+    This.size -= nteh_contextsym_size();
 #if MARS
     if (funcsym_p->Sfunc->Fflags3 & Ffakeeh && nteh_contextsym_size() == 0)
-        Fast.size -= 5 * 4;
+        This.size -= 5 * 4;
 #endif
 #endif
-    Fast.size = -align(REGSIZE, -Fast.size + Fast.offset);
+    This.size = -align(REGSIZE, -This.size + This.offset);
 
     int bias = Para.size + (needframe ? 0 : REGSIZE);
     if (Auto.alignment < REGSIZE)
         Auto.alignment = REGSIZE;       // necessary because localsize must be REGSIZE aligned
-    Auto.size = alignsection(Fast.size - Auto.offset, Auto.alignment, bias);
+    Auto.size = alignsection(This.size - Auto.offset, Auto.alignment, bias);
 
     regsave.off = alignsection(Auto.size - regsave.top, regsave.alignment, bias);
 
@@ -987,7 +992,7 @@ void stackoffsets(int flags)
     //printf("stackoffsets() %s\n", funcsym_p->Sident);
 
     Para.init();        // parameter offset
-    Fast.init();        // SCfastpar offset
+    This.init();        // SCfastpar offset
     Auto.init();        // automatic & register offset
     EEStack.init();     // for SCstack's
 
@@ -1054,24 +1059,22 @@ void stackoffsets(int flags)
                  */
                 if (sz < REGSIZE)
                     sz = REGSIZE;
+                
+                {
+                    LocalSection* sec = fastpar_section(s);
+                    sec->offset = align(sz,sec->offset);
+                    s->Soffset = sec->offset;
+                    sec->offset += sz;
+                    //printf("fastpar '%s' sz = %d, fast offset =  x%x, %p\n",s->Sident,(int)sz,(int)s->Soffset, s);
 
-                if (alignsize > REGSIZE)
-                    // This section will only be aligned to REGSIZE, so we 
-                    // can't put this parameter here.
-                    goto AUTO_CASE;
+                    if (alignsize > sec->alignment)
+                        sec->alignment = alignsize;
+                }
 
-                Fast.offset = align(sz,Fast.offset);
-                s->Soffset = Fast.offset;
-                Fast.offset += sz;
-                //printf("fastpar '%s' sz = %d, fast offset =  x%x, %p\n",s->Sident,(int)sz,(int)s->Soffset, s);
-
-                if (alignsize > Fast.alignment)
-                    Fast.alignment = alignsize;
                 break;
 
             case SCregister:
             case SCauto:
-AUTO_CASE:
                 if (s->Sfl == FLreg)        // if allocated in register
                     break;
 

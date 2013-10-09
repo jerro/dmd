@@ -85,6 +85,8 @@ STATIC unsigned cv4_symtypidx ( symbol *s );
 STATIC void cv4_outsym(symbol *s);
 STATIC void cv4_func(Funcsym *s);
 
+LocalSection* fastpar_section(Symbol* s);
+
 /******************************************
  * Return number of bytes consumed in OBJ file by a name.
  */
@@ -2361,7 +2363,7 @@ STATIC void cv4_outsym(symbol *s)
 
             case SCfastpar:
                 if (s->Sfl != FLreg)
-                {   base = (s->Salignsize() > REGSIZE ? Auto.size : Fast.size);
+                {   base = fastpar_sectino(s)->size;
                     goto L1;
                 }
                 goto case_register;
