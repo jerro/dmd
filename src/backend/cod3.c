@@ -3395,7 +3395,7 @@ code* prolog_loadparams(tym_t tyf, bool pushalloc, regm_t* namedargs)
             }
             else
             {
-                targ_size_t offset = Fast.size + BPoff;
+                targ_size_t offset = (s->Salignsize() > REGSIZE ? Auto.size : Fast.size) + BPoff;
                 if (s->Sclass == SCshadowreg)
                     offset = Para.size;
                 offset += s->Soffset;
@@ -4386,13 +4386,13 @@ if (0 && !(funcsym_p->Sfunc->Fflags3 & Fmember))
                 break;
             case SCfastpar:
 //printf("\tfastpar %s %p Soffset %x Fast.size %x BPoff %x\n", s->Sident, s, (int)s->Soffset, (int)Fast.size, (int)BPoff);
-                s->Soffset += Fast.size + BPoff;
+                s->Soffset += (s->Salignsize() > REGSIZE ? Auto.size : Fast.size) + BPoff;
                 break;
             case SCauto:
             case SCregister:
             case_auto:
                 if (s->Sfl == FLfast)
-                    s->Soffset += Fast.size + BPoff;
+                    s->Soffset += (s->Salignsize() > REGSIZE ? Auto.size : Fast.size) + BPoff;
                 else
 //printf("s = '%s', Soffset = x%x, Auto.size = x%x, BPoff = x%x EBPtoESP = x%x\n", s->Sident, (int)s->Soffset, (int)Auto.size, (int)BPoff, (int)EBPtoESP);
 //              if (!(funcsym_p->Sfunc->Fflags3 & Fnested))
@@ -4566,7 +4566,7 @@ void assignaddrc(code *c)
                 break;
 
             case FLfast:
-                soff = Fast.size;
+                soff = (s->Salignsize() > REGSIZE ? Auto.size : Fast.size);
                 goto L1;
             case FLreg:
             case FLauto:
@@ -4715,7 +4715,7 @@ void assignaddrc(code *c)
                 assert(0);
                 /* NOTREACHED */
             case FLfast:
-                c->IEVpointer2 += s->Soffset + Fast.size + BPoff;
+                c->IEVpointer2 += s->Soffset + (s->Salignsize() > REGSIZE ? Auto.size : Fast.size) + BPoff;
                 break;
             case FLauto:
                 c->IEVpointer2 += s->Soffset + Auto.size + BPoff;
@@ -4774,7 +4774,7 @@ targ_size_t cod3_bpoffset(symbol *s)
             offset += Para.size;
             break;
         case FLfast:
-            offset += Fast.size + BPoff;
+            offset += (s->Salignsize() > REGSIZE ? Auto.size : Fast.size) + BPoff;
             break;
         case FLauto:
             offset += Auto.size + BPoff;

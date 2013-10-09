@@ -94,7 +94,7 @@ else
 endif
 QUIET=@
 export RESULTS_DIR=test_results
-export MODEL=32
+export MODEL=64
 export REQUIRED_ARGS=
 
 ifeq ($(findstring win,$(OS)),win)

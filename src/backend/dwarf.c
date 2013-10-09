@@ -1257,7 +1257,7 @@ void dwarf_func_term(Symbol *sfunc)
                                 sa->Sclass == SCparameter)
                                 infobuf->writesLEB128(sa->Soffset);
                             else if (sa->Sclass == SCfastpar)
-                                infobuf->writesLEB128(Fast.size + BPoff - Para.size + sa->Soffset);
+                                infobuf->writesLEB128((sa->Salignsize() > REGSIZE ? Auto.size : Fast.size) + BPoff - Para.size + sa->Soffset);
                             else if (sa->Sclass == SCbprel)
                                 infobuf->writesLEB128(-Para.size + sa->Soffset);
                             else

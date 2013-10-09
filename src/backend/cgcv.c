@@ -2361,7 +2361,7 @@ STATIC void cv4_outsym(symbol *s)
 
             case SCfastpar:
                 if (s->Sfl != FLreg)
-                {   base = Fast.size;
+                {   base = (s->Salignsize() > REGSIZE ? Auto.size : Fast.size);
                     goto L1;
                 }
                 goto case_register;

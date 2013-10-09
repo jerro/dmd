@@ -679,7 +679,7 @@ Lagain:
         Fast.size -= 5 * 4;
 #endif
 #endif
-    Fast.size = -align(REGSIZE,-Fast.size + Fast.offset);
+    Fast.size = -align(REGSIZE, -Fast.size + Fast.offset);
 
     int bias = Para.size + (needframe ? 0 : REGSIZE);
     if (Auto.alignment < REGSIZE)
@@ -1055,6 +1055,11 @@ void stackoffsets(int flags)
                 if (sz < REGSIZE)
                     sz = REGSIZE;
 
+                if (alignsize > REGSIZE)
+                    // This section will only be aligned to REGSIZE, so we 
+                    // can't put this parameter here.
+                    goto AUTO_CASE;
+
                 Fast.offset = align(sz,Fast.offset);
                 s->Soffset = Fast.offset;
                 Fast.offset += sz;
@@ -1066,6 +1071,7 @@ void stackoffsets(int flags)
 
             case SCregister:
             case SCauto:
+AUTO_CASE:
                 if (s->Sfl == FLreg)        // if allocated in register
                     break;
 
