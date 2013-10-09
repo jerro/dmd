@@ -43,6 +43,8 @@ STATIC void do16bit (enum FL,union evc *,int);
 STATIC void do32bit (enum FL,union evc *,int,int = 0);
 STATIC void do64bit (enum FL,union evc *,int);
 
+LocalSection* fastpar_section(Symbol* s);
+
 #if ELFOBJ || MACHOBJ
 #define JMPSEG  CDATA
 #define JMPOFF  CDoffset
@@ -2139,7 +2141,7 @@ regm_t cod3_useBP()
         goto Lcant;
 
     stackoffsets(0);
-    localsize = Auto.offset + Fast.offset;                // an estimate only
+    localsize = Auto.offset + This.offset;                // an estimate only
 //    if (localsize)
     {
         if (!(config.flags4 & CFG4speed) ||
@@ -3395,7 +3397,7 @@ code* prolog_loadparams(tym_t tyf, bool pushalloc, regm_t* namedargs)
             }
             else
             {
-                targ_size_t offset = Fast.size + BPoff;
+                targ_size_t offset = fastpar_section(s)->size + BPoff;
                 if (s->Sclass == SCshadowreg)
                     offset = Para.size;
                 offset += s->Soffset;
@@ -4386,13 +4388,13 @@ if (0 && !(funcsym_p->Sfunc->Fflags3 & Fmember))
                 break;
             case SCfastpar:
 //printf("\tfastpar %s %p Soffset %x Fast.size %x BPoff %x\n", s->Sident, s, (int)s->Soffset, (int)Fast.size, (int)BPoff);
-                s->Soffset += Fast.size + BPoff;
+                s->Soffset += fastpar_section(s)->size + BPoff;
                 break;
             case SCauto:
             case SCregister:
             case_auto:
                 if (s->Sfl == FLfast)
-                    s->Soffset += Fast.size + BPoff;
+                    s->Soffset += fastpar_section(s)->size + BPoff;
                 else
 //printf("s = '%s', Soffset = x%x, Auto.size = x%x, BPoff = x%x EBPtoESP = x%x\n", s->Sident, (int)s->Soffset, (int)Auto.size, (int)BPoff, (int)EBPtoESP);
 //              if (!(funcsym_p->Sfunc->Fflags3 & Fnested))
@@ -4566,7 +4568,7 @@ void assignaddrc(code *c)
                 break;
 
             case FLfast:
-                soff = Fast.size;
+                soff = fastpar_section(s)->size;
                 goto L1;
             case FLreg:
             case FLauto:
@@ -4715,7 +4717,7 @@ void assignaddrc(code *c)
                 assert(0);
                 /* NOTREACHED */
             case FLfast:
-                c->IEVpointer2 += s->Soffset + Fast.size + BPoff;
+                c->IEVpointer2 += s->Soffset + fastpar_section(s)->size + BPoff;
                 break;
             case FLauto:
                 c->IEVpointer2 += s->Soffset + Auto.size + BPoff;
@@ -4774,7 +4776,7 @@ targ_size_t cod3_bpoffset(symbol *s)
             offset += Para.size;
             break;
         case FLfast:
-            offset += Fast.size + BPoff;
+            offset += fastpar_section(s)->size + BPoff;
             break;
         case FLauto:
             offset += Auto.size + BPoff;

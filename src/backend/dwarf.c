@@ -70,6 +70,8 @@ static char __file__[] = __FILE__;      // for tassert.h
 
 #define OFFSET_FAC REGSIZE
 
+LocalSection* fastpar_section(Symbol* s);
+
 int dwarf_getsegment(const char *name, int align)
 {
 #if ELFOBJ
@@ -1257,7 +1259,7 @@ void dwarf_func_term(Symbol *sfunc)
                                 sa->Sclass == SCparameter)
                                 infobuf->writesLEB128(sa->Soffset);
                             else if (sa->Sclass == SCfastpar)
-                                infobuf->writesLEB128(Fast.size + BPoff - Para.size + sa->Soffset);
+                                infobuf->writesLEB128(fastpar_section(sa)->size + BPoff - Para.size + sa->Soffset);
                             else if (sa->Sclass == SCbprel)
                                 infobuf->writesLEB128(-Para.size + sa->Soffset);
                             else

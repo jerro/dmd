@@ -92,6 +92,8 @@ static Outbuffer *linepair;     // array of offset/line pairs
 unsigned cv8_addfile(const char *filename);
 void cv8_writesection(int seg, unsigned type, Outbuffer *buf);
 
+LocalSection* fastpar_section(Symbol* s);
+
 /************************************************
  * Called at the start of an object file generation.
  * One source file can generate multiple object files; this starts an object file.
@@ -607,7 +609,7 @@ void cv8_outsym(Symbol *s)
 
         case SCfastpar:
             if (s->Sfl != FLreg)
-            {   base = Fast.size;
+            {   base = fastpar_section(s)->size;
                 goto L1;
             }
             goto L2;
