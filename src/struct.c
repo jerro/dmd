@@ -529,6 +529,25 @@ int AggregateDeclaration::numFieldsInUnion(int firstIndex)
     return count;
 }
 
+/*******************************************
+ * Look for constructor declaration.
+ */
+void AggregateDeclaration::searchCtor()
+{
+    ctor = search(Loc(), Id::ctor, 0);
+    if (ctor)
+    {
+        if (!(ctor->isCtorDeclaration() ||
+              ctor->isTemplateDeclaration() ||
+              ctor->isOverloadSet()))
+        {
+            error("%s %s is not a constructor; identifiers starting with __ are reserved for the implementation", ctor->kind(), ctor->toChars());
+            errors = true;
+            ctor = NULL;
+        }
+    }
+}
+
 /********************************* StructDeclaration ****************************/
 
 StructDeclaration::StructDeclaration(Loc loc, Identifier *id)
@@ -817,9 +836,7 @@ void StructDeclaration::semantic(Scope *sc)
 
     /* Look for special member functions.
      */
-#if DMDV2
-    ctor = search(Loc(), Id::ctor, 0);
-#endif
+    searchCtor();
     aggNew =       (NewDeclaration *)search(Loc(), Id::classNew,       0);
     aggDelete = (DeleteDeclaration *)search(Loc(), Id::classDelete,    0);
 
@@ -841,6 +858,7 @@ void StructDeclaration::semantic(Scope *sc)
     if (global.errors != errors)
     {   // The type is no good.
         type = Type::terror;
+        this->errors = true;
     }
 
     if (deferred && !global.gag)
@@ -849,14 +867,12 @@ void StructDeclaration::semantic(Scope *sc)
         deferred->semantic3(sc);
     }
 
-#if 0
     if (type->ty == Tstruct && ((TypeStruct *)type)->sym != this)
     {
-        printf("this = %p %s\n", this, this->toChars());
-        printf("type = %d sym = %p\n", type->ty, ((TypeStruct *)type)->sym);
+        error("failed semantic analysis");
+        this->errors = true;
+        type = Type::terror;
     }
-#endif
-    assert(type->ty != Tstruct || ((TypeStruct *)type)->sym == this);
 }
 
 Dsymbol *StructDeclaration::search(Loc loc, Identifier *ident, int flags)

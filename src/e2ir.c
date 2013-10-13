@@ -417,6 +417,11 @@ elem *addressElem(elem *e, Type *t, bool alwaysCopy)
         TY ty;
         if (t && ((ty = t->toBasetype()->ty) == Tstruct || ty == Tsarray))
             tx = t->toCtype();
+        else if (tybasic(e2->Ety) == TYstruct)
+        {
+            assert(t);                  // don't know of a case where this can be NULL
+            tx = t->toCtype();
+        }
         else
             tx = type_fake(e2->Ety);
         Symbol *stmp = symbol_genauto(tx);
@@ -1618,6 +1623,8 @@ elem *StringExp::toElem(IRState *irs)
         outdata(si);
 
         e = el_var(si);
+
+        e->Ejty = e->Ety = TYstruct;
         e->ET = t;
         t->Tcount++;
     }
@@ -3629,7 +3636,7 @@ elem *CondExp::toElem(IRState *irs)
     elem *ec = econd->toElem(irs);
 
     elem *eleft = e1->toElemDtor(irs);
-    tym_t ty = type->totym();
+    tym_t ty = eleft->Ety;
     if (global.params.cov && e1->loc.linnum)
         eleft = el_combine(incUsageElem(irs, e1->loc), eleft);
 
@@ -3639,7 +3646,7 @@ elem *CondExp::toElem(IRState *irs)
 
     elem *e = el_bin(OPcond, ty, ec, el_bin(OPcolon, ty, eleft, eright));
     if (tybasic(ty) == TYstruct)
-        e->ET = type->toCtype();
+        e->ET = e1->type->toCtype();
     el_setLoc(e, loc);
     return e;
 }
@@ -4509,8 +4516,8 @@ Lagain:
                                    fty = Tfloat64;
                                    goto Lagain;
         case X(Tfloat32,Tfloat64): eop = OPf_d; goto Leop;
-        case X(Tfloat32,Timaginary32): goto Lzero;
-        case X(Tfloat32,Timaginary64): goto Lzero;
+        case X(Tfloat32,Timaginary32):
+        case X(Tfloat32,Timaginary64):
         case X(Tfloat32,Timaginary80): goto Lzero;
         case X(Tfloat32,Tcomplex32):
         case X(Tfloat32,Tcomplex64):
@@ -4533,8 +4540,8 @@ Lagain:
         case X(Tfloat64,Tuns64):   eop = OPd_u64; goto Leop;
         case X(Tfloat64,Tfloat32): eop = OPd_f;   goto Leop;
         case X(Tfloat64,Tfloat80): eop = OPd_ld;  goto Leop;
-        case X(Tfloat64,Timaginary32):  goto Lzero;
-        case X(Tfloat64,Timaginary64):  goto Lzero;
+        case X(Tfloat64,Timaginary32):
+        case X(Tfloat64,Timaginary64):
         case X(Tfloat64,Timaginary80):  goto Lzero;
         case X(Tfloat64,Tcomplex32):
         case X(Tfloat64,Tcomplex64):
@@ -4558,8 +4565,8 @@ Lagain:
         case X(Tfloat80,Tuns64):
                                    eop = OPld_u64; goto Leop;
         case X(Tfloat80,Tfloat64): eop = OPld_d; goto Leop;
-        case X(Tfloat80,Timaginary32): goto Lzero;
-        case X(Tfloat80,Timaginary64): goto Lzero;
+        case X(Tfloat80,Timaginary32):
+        case X(Tfloat80,Timaginary64):
         case X(Tfloat80,Timaginary80): goto Lzero;
         case X(Tfloat80,Tcomplex32):
         case X(Tfloat80,Tcomplex64):
@@ -4731,10 +4738,11 @@ Lagain:
             //dump(0);
             //printf("fty = %d, tty = %d, %d\n", fty, tty, t->ty);
             error("e2ir: cannot cast %s of type %s to type %s", e1->toChars(), e1->type->toChars(), t->toChars());
-            goto Lzero;
+            e = el_long(ttym, 0);
+            break;
 
         Lzero:
-            e = el_long(ttym, 0);
+            e = el_bin(OPcomma, ttym, e, el_long(ttym, 0));
             break;
 
         Lpaint:
